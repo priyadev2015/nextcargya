@@ -68,20 +68,3 @@ export const PUT = async (request: Request) => {
   }
 };
 
-// DELETE a user
-export const DELETE = async (request: Request) => {
-  try {
-    await connectToDatabase();
-    const id = request.query?.id;
-    if (!id) {
-      return new NextResponse(`User ID is required`, { status: 400 });
-    }
-    const deletedUser = await User.findByIdAndDelete(id);
-    if (!deletedUser) {
-      return new NextResponse(`User not found with id ${id}`, { status: 404 });
-    }
-    return new NextResponse(`User deleted successfully`, { status: 200 });
-  } catch (error) {
-    return new NextResponse(`Error deleting user: ${error}`, { status: 500 });
-  }
-};
