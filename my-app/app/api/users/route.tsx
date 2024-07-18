@@ -1,24 +1,30 @@
+// lib/api/users.ts
+
+import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import User, { UserDocument } from '@/lib/modal/users';
-import { NextResponse } from 'next/server';
 
 // Function to generate fuel code
 const generateFuelCode = async () => {
-  // Implement your logic here to generate the fuel code
-  // This logic should ensure the code is unique and follows the specified format
-  // For example, you can generate it based on sequential numbering or any other method as per your requirements
-  const latestUser = await User.findOne().sort({ createdAt: -1 });
-  const lastFuelCode = latestUser ? latestUser.fuelCode : 'KDOCY000000';
-  const lastNumber = parseInt(lastFuelCode.slice(-6)) + 1;
-  const newFuelCode = `KDOCY${('000000' + lastNumber).slice(-6)}`;
-  return newFuelCode;
+  try {
+    const latestUser = await User.findOne().sort({ createdAt: -1 });
+    const lastFuelCode = latestUser ? latestUser.fuelCode : 'KDOCY000000';
+    const lastNumber = parseInt(lastFuelCode.slice(-6)) + 1;
+    if (lastNumber > 500000) {
+      throw new Error('Maximum fuel code limit reached');
+    }
+    const newFuelCode = `KDOCY${('000000' + lastNumber).slice(-6)}`;
+    return newFuelCode;
+  } catch (error) {
+    throw new Error(`Error generating fuel code: ${error}`);
+  }
 };
 
 // GET all users
 export const GET = async () => {
   try {
     await connectToDatabase();
-    const users = await User.find().select('+email +password +fullname +phone +identificationNumber +vehicleType +vehicleLicensePlateNumber +fuelCode +createdAt +updatedAt');
+    const users = await User.find().select('name lastName documentNumber city vehicleType vehicleLicensePlateNumber fuelCode createdAt updatedAt');
     return new NextResponse(JSON.stringify(users), { status: 200 });
   } catch (error) {
     return new NextResponse(`Error fetching users: ${error}`, { status: 500 });
@@ -29,12 +35,12 @@ export const GET = async () => {
 export const POST = async (request: Request) => {
   try {
     await connectToDatabase();
-    const { email, password, fullname, phone, identificationNumber, vehicleType, vehicleLicensePlateNumber } = await request.json();
+    const { name, lastName, documentNumber, city, vehicleType, vehicleLicensePlateNumber } = await request.json();
     
     // Generate fuel code
     const fuelCode = await generateFuelCode();
 
-    const newUser = new User({ email, password, fullname, phone, identificationNumber, vehicleType, vehicleLicensePlateNumber, fuelCode });
+    const newUser = new User({ name, lastName, documentNumber, city, vehicleType, vehicleLicensePlateNumber, fuelCode });
     const savedUser = await newUser.save();
     return new NextResponse(JSON.stringify(savedUser), { status: 201 });
   } catch (error) {
@@ -46,7 +52,7 @@ export const POST = async (request: Request) => {
 export const PUT = async (request: Request) => {
   try {
     await connectToDatabase();
-    const { _id, email, password, fullname, phone, identificationNumber, vehicleType, vehicleLicensePlateNumber } = await request.json();
+    const { _id, name, lastName, documentNumber, city, vehicleType, vehicleLicensePlateNumber } = await request.json();
 
     // Generate fuel code if updating vehicle information
     let fuelCode = undefined;
@@ -56,7 +62,7 @@ export const PUT = async (request: Request) => {
 
     const updatedUser = await User.findByIdAndUpdate(
       _id,
-      { email, password, fullname, phone, identificationNumber, vehicleType, vehicleLicensePlateNumber, fuelCode, updatedAt: Date.now() },
+      { name, lastName, documentNumber, city, vehicleType, vehicleLicensePlateNumber, fuelCode, updatedAt: Date.now() },
       { new: true }
     );
     if (!updatedUser) {
@@ -68,3 +74,18 @@ export const PUT = async (request: Request) => {
   }
 };
 
+// DELETE a user
+export const DELETE = async (request: Request) => {
+  try {
+    await connectToDatabase();
+    const { _id } = await request.json();
+
+    const deletedUser = await User.findByIdAndDelete(_id);
+    if (!deletedUser) {
+      return new NextResponse(`User not found with id ${_id}`, { status: 404 });
+    }
+    return new NextResponse(JSON.stringify({ message: 'User deleted successfully' }), { status: 200 });
+  } catch (error) {
+    return new NextResponse(`Error deleting user: ${error}`, { status: 500 });
+  }
+};
