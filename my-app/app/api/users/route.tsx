@@ -69,7 +69,7 @@ export const PUT = async (request: Request) => {
 };
 
 // DELETE a user
-export const DELETE = async (request) => {
+export const DELETE = async (request: Request) => {
   try {
     await connectToDatabase();
     const id = request.query?.id;
