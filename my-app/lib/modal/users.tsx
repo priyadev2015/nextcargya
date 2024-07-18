@@ -32,10 +32,11 @@ const nameValidator = {
 
 // Validator for vehicle license plate number (letters, numbers, and spaces allowed, no special characters)
 const licensePlateValidator = {
-  validator: function(v: string) {
-    return /^[a-zA-Z0-9\s]+$/.test(v);
+  validator: async function(v: string) {
+    const existingUser = await mongoose.models.User.findOne({ vehicleLicensePlateNumber: v });
+    return !existingUser; // Return true if no existing user found with the same license plate number
   },
-  message: (props: any) => `${props.value} is not valid! Only letters, numbers, and spaces are allowed.`
+  message: (props: any) => `${props.value} is already registered! Please choose a different license plate number.`
 };
 
 const userSchema = new Schema<UserDocument>({
@@ -44,7 +45,14 @@ const userSchema = new Schema<UserDocument>({
   documentNumber: { type: String, required: true, validate: alphanumericValidator },
   city: { type: String, required: true, validate: alphanumericValidator },
   vehicleType: { type: String, validate: alphanumericValidator },
-  vehicleLicensePlateNumber: { type: String, validate: licensePlateValidator },
+  vehicleLicensePlateNumber: {
+    type: String,
+    required: true,
+    validate: [
+      alphanumericValidator,
+      licensePlateValidator
+    ]
+  },
   fuelCode: { type: String, required: true, validate: alphanumericValidator },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
