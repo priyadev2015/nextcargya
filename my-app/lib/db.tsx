@@ -1,27 +1,19 @@
-import mongoose from 'mongoose';
+import mongoose, { ConnectOptions } from 'mongoose';
 
-const MONGODB_URL = process.env.MONGODB_URL;
+const MONGODB_URL: string = process.env.MONGODB_URL || '';
 
-// Function to connect to MongoDB
 const connectToDatabase = async () => {
   try {
-    if (mongoose.connection.readyState >= 1) {
-      console.log("Already connected to MongoDB");
-      return true; // Already connected, return true
-    }
-
     await mongoose.connect(MONGODB_URL, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-    });
+    } as ConnectOptions); 
 
-    console.log("Connected to MongoDB");
-
-    return true; // Return true on successful connection
-
+    console.log('Connected to MongoDB');
   } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
-    throw new Error("Error connecting to database");
+    console.error('Error connecting to MongoDB:', );
+  
+    process.exit(1);
   }
 };
 
